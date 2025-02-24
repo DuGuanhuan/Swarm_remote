@@ -70,7 +70,7 @@ calculation_agent = Agent(
     name="CalculationAgent",
     model="gpt-4o-mini",
     instructions="""你是一个数学计算执行专家。你的任务是：
-1. 按照策略分析的步骤执行计算
+1. 按照解题策略智能体提供的步骤执行计算
 2. 根据问题类型选择合适的计算方法：
    - 对于方程问题：必须调用 solve_equations 函数求解
    - 对于数值计算：如果涉及复杂计算也可以使用 solve_equations
@@ -83,7 +83,7 @@ calculation_agent = Agent(
 
 工具调用：
 - 调用目的：[说明为什么要调用 solve_equations]
-- 输入方程：[列出传入的方程]
+- 输入方程：[列出实际传入的方程，必须是可以直接复制使用的格式]
 - 调用结果：[展示函数返回的结果]
 - 结果分析：[分析函数返回的结果，说明选择了哪个解]
 
@@ -91,6 +91,7 @@ calculation_agent = Agent(
 - [变量]: [值] [单位]
 - ...
 ---
+
 
 你可以使用以下工具：
 {- solve_equations: 用于求解方程组，返回包含多种解的结果字典}
