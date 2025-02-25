@@ -84,6 +84,35 @@ def test_latex_equations():
         result = solve_equations(case['correct'])
         print(f"正确格式结果: {result}")
 
+def test_complex_equations():
+    """测试复杂方程的求解"""
+    test_cases = [
+        {
+            "name": "带括号的复杂表达式",
+            "equation": ["0.5*a + a + 0.5*a + (a + 7) + 0.5*a + (a + 14) = 120"],
+            "expected": 22
+        },
+        {
+            "name": "化简后的表达式",
+            "equation": ["4.5*a + 21 = 120"],
+            "expected": 22
+        }
+    ]
+    
+    for case in test_cases:
+        print(f"\n测试用例: {case['name']}")
+        print(f"输入方程: {case['equation']}")
+        
+        result = solve_equations(case['equation'])
+        print(f"返回结果: {result}")
+        
+        if 'error' in result:
+            print(f"错误信息: {result['error']}")
+        else:
+            solution = result['all_solutions'][0]['a']
+            print(f"求解结果: a = {solution}")
+            print(f"是否正确: {'✓' if abs(solution - case['expected']) < 0.0001 else '✗'}")
+
 def main():
     # 测试单个方程
     print("=== 测试单个方程 ===")
@@ -140,6 +169,9 @@ def main():
     # 运行所有测试用例
     print("\n=== 运行所有测试用例 ===")
     test_solve_equations()
+
+    # 测试复杂方程的求解
+    test_complex_equations()
 
 if __name__ == "__main__":
     main() 
