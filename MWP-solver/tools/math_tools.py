@@ -61,9 +61,31 @@ def solve_equations(equations, target_var=None):
         seen = set()
         for eq in equations:
             eq = eq.strip()
+            
             # 标准化方程格式
             if '=' not in eq:
-                eq = f"{eq} = 0"  # 如果没有等号，假设等于0
+                eq = f"{eq} = 0"
+                
+            # 处理括号和表达式
+            try:
+                left, right = eq.split('=')
+                left = left.strip()
+                right = right.strip()
+                
+                # 展开括号，化简表达式
+                left = str(sympify(left))
+                right = str(sympify(right))
+                
+                # 确保乘法使用 *
+                left = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', left)
+                right = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', right)
+                
+                # 构建标准格式方程
+                eq = f"{left} = {right}"
+                
+            except Exception as e:
+                return {"error": f"方程格式错误: {str(e)}。请使用标准的代数表达式，如 '2*x + 3 = 7'"}
+            
             if eq and eq not in seen:
                 seen.add(eq)
                 valid_equations.append(eq)
@@ -76,17 +98,10 @@ def solve_equations(equations, target_var=None):
         for eq in valid_equations:
             try:
                 left, right = eq.split('=')
-                left = left.strip()
-                right = right.strip()
-                # 处理系数中的小数
-                if '.' in left or '.' in right:
-                    # 将小数转换为分数形式
-                    left = str(sympify(left))
-                    right = str(sympify(right))
                 sympy_eq = sympify(f"{left}-({right})")
                 sympy_eqs.append(sympy_eq)
             except Exception as e:
-                continue
+                return {"error": f"方程转换错误: {str(e)}"}
                 
         if not sympy_eqs:
             return {"error": "求解错误: 无法转换方程"}

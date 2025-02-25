@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Binlog 恢复</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .recovery-mode {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .recovery-container {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .table-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .table-settings select, .table-settings input {
+            width: 100%;
+            padding: 8px;
+        }
+        .event-checkbox {
+            display: flex;
+            gap: 8px;
+        }
+        .event-checkbox label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .remove-btn {
+            background: red;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>MySQL Binlog 恢复</h2>
+
+    <!-- 选择恢复模式 -->
+    <div class="recovery-mode">
+        <input type="radio" id="fullRecovery" name="recoveryType" value="full" checked onchange="toggleRecoveryMode()">
+        <label for="fullRecovery">全量恢复</label>
+
+        <input type="radio" id="tableRecovery" name="recoveryType" value="table" onchange="toggleRecoveryMode()">
+        <label for="tableRecovery">库表恢复</label>
+    </div>
+
+    <!-- 库表恢复设置 -->
+    <div id="tableRecoveryContainer" class="recovery-container" style="display: none;">
+        <button onclick="addTableSetting()">＋ 添加表</button>
+        <div id="tableSettingsList"></div>
+    </div>
+
+    <!-- 执行恢复 -->
+    <button onclick="executeRecovery()">执行恢复</button>
+
+    <script>
+        // 模拟的表列表
+        const tables = ['users', 'orders', 'products'];
+
+        // 切换恢复模式
+        function toggleRecoveryMode() {
+            let isTableMode = document.getElementById("tableRecovery").checked;
+            document.getElementById("tableRecoveryContainer").style.display = isTableMode ? "block" : "none";
+        }
+
+        // 添加新的表设置
+        function addTableSetting() {
+            let tableId = `table_${Date.now()}`;
+            let div = document.createElement("div");
+            div.classList.add("table-settings");
+            div.id = tableId;
+
+            div.innerHTML = `
+                <label>选择表：</label>
+                <select onchange="updateSQLPreview()">
+                    <option value="users">users</option>
+                    <option value="orders">orders</option>
+                    <option value="products">products</option>
+                </select>
+
+                <div class="event-checkbox">
+                    <label><input type="checkbox" onchange="updateSQLPreview()"> Insert</label>
+                    <label><input type="checkbox" onchange="updateSQLPreview()"> Update</label>
+                    <label><input type="checkbox" onchange="updateSQLPreview()"> Delete</label>
+                </div>
+
+                <label>Insert WHERE 条件：</label>
+                <input type="text" id="${tableId}_insertCondition" placeholder="请输入 WHERE 条件" onchange="updateSQLPreview()">
+
+                <label>Update WHERE 条件：</label>
+                <input type="text" id="${tableId}_updateCondition" placeholder="请输入 WHERE 条件" onchange="updateSQLPreview()">
+
+                <label>Delete WHERE 条件：</label>
+                <input type="text" id="${tableId}_deleteCondition" placeholder="请输入 WHERE 条件" onchange="updateSQLPreview()">
+
+                <button class="remove-btn" onclick="removeTableSetting('${tableId}')">－</button>
+            `;
+
+            document.getElementById("tableSettingsList").appendChild(div);
+            updateSQLPreview();
+        }
+
+        // 删除表设置
+        function removeTableSetting(tableId) {
+            let tableSettingsList = document.getElementById("tableSettingsList");
+            let tableDiv = document.getElementById(tableId);
+            tableSettingsList.removeChild(tableDiv);
+            updateSQLPreview();
+        }
+
+        // 生成 SQL 预览
+        function updateSQLPreview() {
+            let sql = "mysqlbinlog binlog.log";
+
+            // 遍历每个表
+            let tablesDivs = document.querySelectorAll(".table-settings");
+            tablesDivs.forEach(tableDiv => {
+                let tableName = tableDiv.querySelector("select").value;
+                let insertChecked = tableDiv.querySelector("input[type='checkbox']:nth-child(1)").checked;
+                let updateChecked = tableDiv.querySelector("input[type='checkbox']:nth-child(2)").checked;
+                let deleteChecked = tableDiv.querySelector("input[type='checkbox']:nth-child(3)").checked;
+
+                // WHERE 条件
+                let insertCondition = tableDiv.querySelector("input[id*='insertCondition']").value;
+                let updateCondition = tableDiv.querySelector("input[id*='updateCondition']").value;
+                let deleteCondition = tableDiv.querySelector("input[id*='deleteCondition']").value;
+
+                if (insertChecked) {
+                    sql += ` | grep 'INSERT INTO ${tableName}'`;
+                    if (insertCondition) sql += ` | grep '${insertCondition}'`;
+                }
+
+                if (updateChecked) {
+                    sql += ` | grep 'UPDATE ${tableName}'`;
+                    if (updateCondition) sql += ` | grep '${updateCondition}'`;
+                }
+
+                if (deleteChecked) {
+                    sql += ` | grep 'DELETE FROM ${tableName}'`;
+                    if (deleteCondition) sql += ` | grep '${deleteCondition}'`;
+                }
+            });
+
+            sql += " | mysql -u root -p";
+            document.getElementById("sqlPreview").textContent = sql;
+        }
+
+        // 执行恢复
+        function executeRecovery() {
+            let sql = document.getElementById("sqlPreview").textContent;
+            if (!sql || sql.includes("请选择要恢复的表")) {
+                alert("请先选择恢复条件！");
+                return;
+            }
+
+            if (!confirm("确定要执行以下恢复操作吗？\n\n" + sql)) {
+                return;
+            }
+
+            alert("执行恢复命令：\n" + sql);
+        }
+    </script>
+
+</body>
+</html>
