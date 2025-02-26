@@ -1,0 +1,4 @@
+2025-02-26 13:09:55,559 - math_solver - INFO - 开始解题: 
+The owner of a Turkish restaurant wanted to prepa...
+2025-02-26 13:09:57,116 - httpx - INFO - HTTP Request: POST https://api.nuwaapi.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-02-26 13:09:57,121 - math_solver - INFO - 开始问题分析

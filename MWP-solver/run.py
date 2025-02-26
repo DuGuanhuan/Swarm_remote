@@ -30,57 +30,75 @@ def solve_math_problem(problem_text: str, debug: bool = True):
         if content:
             print(f"\nOutput:\n{content}")
 
-    # 1. 问题分析
-    print_step("Problem Analysis", "开始分析问题...")
-    start_time = time.time()
-    response = swarm.run(
-        agent=problem_analyzer,
-        messages=[{"role": "user", "content": problem_text}],
-        context_variables=context
-    )
-    problem_analysis = response.messages[-1]["content"]
-    print_step("Problem Analysis Complete", problem_analysis)
-    print(f"耗时: {time.time() - start_time:.2f}秒")
-    results["problem_analysis"] = problem_analysis
+    try:
+        # 1. 问题分析
+        if debug:
+            print_step("Problem Analysis", "开始分析问题...")
+            start_time = time.time()
+        
+        response = swarm.run(
+            agent=problem_analyzer,
+            messages=[{"role": "user", "content": problem_text}],
+            context_variables=context
+        )
+        problem_analysis = response.messages[-1]["content"]
+        
+        if debug:
+            print_step("Problem Analysis Complete", problem_analysis)
+            print(f"耗时: {time.time() - start_time:.2f}秒")
+        
+        results["problem_analysis"] = problem_analysis
 
-    # 2. 策略分析
-    print_step("Strategy Analysis", "正在生成解题策略...")
-    start_time = time.time()
-    response = swarm.run(
-        agent=strategy_analyzer,
-        messages=[{"role": "user", "content": f"""
+        # 2. 策略分析
+        if debug:
+            print_step("Strategy Analysis", "正在生成解题策略...")
+            start_time = time.time()
+        
+        response = swarm.run(
+            agent=strategy_analyzer,
+            messages=[{"role": "user", "content": f"""
 基于以下问题分析结果，请提供解题策略和方程组：
 {problem_analysis}
 """}],
-        context_variables=context
-    )
-    strategy = response.messages[-1]["content"]
-    print_step("Strategy Analysis Complete", strategy)
-    print(f"耗时: {time.time() - start_time:.2f}秒")
-    results["strategy"] = strategy
+            context_variables=context
+        )
+        strategy = response.messages[-1]["content"]
+        
+        if debug:
+            print_step("Strategy Analysis Complete", strategy)
+            print(f"耗时: {time.time() - start_time:.2f}秒")
+        
+        results["strategy"] = strategy
 
-    # 3. 计算执行
-    print_step("Calculation", "正在执行计算...")
-    start_time = time.time()
-    response = swarm.run(
-        agent=calculation_agent,
-        messages=[{"role": "user", "content": f"""
+        # 3. 计算执行
+        if debug:
+            print_step("Calculation", "正在执行计算...")
+            start_time = time.time()
+        
+        response = swarm.run(
+            agent=calculation_agent,
+            messages=[{"role": "user", "content": f"""
 请根据以下策略和方程组进行计算：
 {strategy}
 """}],
-        context_variables=context
-    )
-    calculation = response.messages[-1]["content"]
-    print_step("Calculation Complete", calculation)
-    print(f"耗时: {time.time() - start_time:.2f}秒")
-    results["calculation"] = calculation
+            context_variables=context
+        )
+        calculation = response.messages[-1]["content"]
+        
+        if debug:
+            print_step("Calculation Complete", calculation)
+            print(f"耗时: {time.time() - start_time:.2f}秒")
+        
+        results["calculation"] = calculation
 
-    # 4. 验证
-    print_step("Verification", "正在验证结果...")
-    start_time = time.time()
-    response = swarm.run(
-        agent=verification_agent,
-        messages=[{"role": "user", "content": f"""
+        # 4. 验证
+        if debug:
+            print_step("Verification", "正在验证结果...")
+            start_time = time.time()
+        
+        response = swarm.run(
+            agent=verification_agent,
+            messages=[{"role": "user", "content": f"""
 请验证以下解题过程和结果：
 原始问题：
 {problem_text}
@@ -94,19 +112,28 @@ def solve_math_problem(problem_text: str, debug: bool = True):
 计算结果：
 {calculation}
 """}],
-        context_variables=context
-    )
-    verification = response.messages[-1]["content"]
-    print_step("Verification Complete", verification)
-    print(f"耗时: {time.time() - start_time:.2f}秒")
-    results["verification"] = verification
+            context_variables=context
+        )
+        verification = response.messages[-1]["content"]
+        
+        if debug:
+            print_step("Verification Complete", verification)
+            print(f"耗时: {time.time() - start_time:.2f}秒")
+        
+        results["verification"] = verification
+        
+    except Exception as e:
+        error_msg = f"解题过程中发生错误: {str(e)}"
+        if debug:
+            print(f"\n{'='*50}\n{error_msg}\n{'='*50}")
+        results["error"] = error_msg
 
     return results
 
 # 使用示例
 if __name__ == "__main__":
     problem = """
-The owner of a Turkish restaurant wanted to prepare traditional dishes for an upcoming celebration. She ordered ground beef, in four-pound packages, from three different butchers. The following morning, the first butcher delivered 10 packages. A couple of hours later, 7 packages arrived from the second butcher. Finally, the third butcher’s delivery arrived at dusk. If all the ground beef delivered by the three butchers weighed 100 pounds, how many packages did the third butcher deliver?
+The owner of a Turkish restaurant wanted to prepare traditional dishes for an upcoming celebration. She ordered ground beef, in four-pound packages, from three different butchers. The following morning, the first butcher delivered 10 packages. A couple of hours later, 7 packages arrived from the second butcher. Finally, the third butcher's delivery arrived at dusk. If all the ground beef delivered by the three butchers weighed 100 pounds, how many packages did the third butcher deliver?
    """
     
     print("\n开始解题...\n")
