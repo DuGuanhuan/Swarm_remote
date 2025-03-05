@@ -13,4 +13,5 @@ completion = client.chat.completions.create(
         {'role': 'user', 'content': '你是谁？'}],
 )
 
-print(completion.model_dump_json())
+# 假设模型输出在completion.choices[0].message.content中
+print(completion.choices[0].message.content)
